@@ -1,8 +1,15 @@
 import threading
 import visca_over_ip as Visca
+import PyATEMMax
 
 class Cameras():
-    def __init__(self):
+    def __init__(self,atem_ip = None):
+        self.atem = None
+        if atem_ip:
+            self.atem = PyATEMMax.ATEMMax()
+            self.atem.connect(atem_ip)
+            self.atem.waitForConnection()
+            self.atem.registerEvent(self.atem.atem.events.receive, self.atemInputChanged)
         self.current = None
         self.cameras = []
         self.stopped = True
@@ -23,9 +30,20 @@ class Cameras():
         self.visca = None
         
     class camera():
-        def __init__(self,name,ip):
+        def __init__(self,name,ip,atem_input = None):
             self.name = name
             self.ip = ip
+            self.atem_input = atem_input
+    def atemInputChanged(self,dict):
+        if dict['cmd'] == 'PrvI':
+                print("ATEM Input set to %s" % self.atem.previewInput[0].videoSource.value)
+                latestInput = self.atem.previewInput[0].videoSource.value
+                print("current input we are on is: %s " % self.cameras[self.current].atem_input)
+                if self.cameras[self.current].atem_input != latestInput:
+                    for c,cam in enumerate(self.cameras):
+                        if self.cameras[c].atem_input == latestInput:
+                            self.start(self.cameras[c].name)
+                            print("switching to camera %s" % self.cameras[c].name)
 
     def nextModeOption(self):
         if self.controlmode == 0:
@@ -79,18 +97,22 @@ class Cameras():
                 self.speedcursor = self.speedcursor - 1
     def nextCamera(self):
         print(self.current)
+        nextCam = self.current + 1
         if self.current == len(self.cameras) - 1:
-            self.start(self.cameras[0].name)
-        else:
-            self.start(self.cameras[self.current + 1].name)
+            nextCam = 0
+        self.start(self.cameras[nextCam].name)
+        if(self.atem):
+            self.atem.setPreviewInputVideoSource(0, self.cameras[nextCam].atem_input)
     def prevCamera(self):
         print(self.current)
+        prevCam = self.current - 1
         if self.current == 0:
-            self.start(self.cameras[len(self.cameras)-1].name)
-        else:
-            self.start(self.cameras[self.current - 1].name)
-    def add(self,name,ip):
-        self.cameras.append(Cameras.camera(name,ip))
+            prevCam =len(self.cameras)-1
+        self.start(self.cameras[prevCam].name)
+        if(self.atem):
+            self.atem.setPreviewInputVideoSource(0, self.cameras[prevCam].atem_input)
+    def add(self,name,ip,atem_input = None):
+        self.cameras.append(Cameras.camera(name,ip,atem_input))
     def start(self, name):
         for i,n in enumerate(self.cameras):
             if n.name == name:

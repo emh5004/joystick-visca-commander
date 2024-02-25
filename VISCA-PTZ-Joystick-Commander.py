@@ -28,12 +28,12 @@ from pygame.locals import *
 
 import camera_manager
 
-cams = camera_manager.Cameras()
-cams.add("Camera 1","192.168.1.30")
-cams.add("Camera 2","192.168.1.31")
-cams.add("Camera 3","192.168.1.32")
-cams.add("Camera 4","192.168.1.34")
-cams.add("Camera 5","192.168.1.35")
+cams = camera_manager.Cameras("192.168.1.160")
+cams.add("Camera 1","192.168.1.30",7)
+cams.add("Camera 2","192.168.1.31",3)
+cams.add("Camera 3","192.168.1.32",4)
+cams.add("Camera 4","192.168.1.34",5)
+cams.add("Camera 5","192.168.1.35",6)
 cams.start("Camera 5")
 
 axisNames = ["Pan","Tilt","Zoom","Choir"]
